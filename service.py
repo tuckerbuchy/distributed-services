@@ -30,18 +30,30 @@ class ServiceProvidingNode:
         self.server_socket = self.context.socket(zmq.REQ)
         self.server_socket.connect (server_address)
         print "Connected."
+    
     def formatRegisterRequest(self):
         registered_services = []
         for service in self.services:
             registered_services.append({"service_id":service.service_id})
-
         registered_str = json.dumps(registered_services)
         return registered_str
+    
+    #registers the services by sending a request over the wire, letting the server know it exists.
     def registerServices(self):
         reg_message = self.formatRegisterRequest()
         self.server_socket.send(reg_message)
-        response = self.server_socket.recv()
-        print response
+        port = self.server_socket.recv()
+        print "Registered."
+        self.openServiceSocket(port)
+        
+    def openServiceSocket(self, port):
+        print "Opening on port " + port + " for any incoming requests..."
+        self.services_socket = self.context.socket(zmq.REP)
+        #wait on this socket now..
+        print "Listening on services socket..."
+        while True:
+            request = self.services_socket.recv()
+            print request
 
 def add(x,y):
     return x + y

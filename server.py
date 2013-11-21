@@ -7,23 +7,41 @@ import zmq
 import time
 import json
 
-context = zmq.Context()
+class Server:
+	def __init__(self, server_address):
+		self.context = zmq.Context()
+		
+		#bind to a socket.
+		print "Binding to " + server_address + "..."
+		self.services_socket = self.context.socket(zmq.ROUTER)
+		self.services_socket.bind(server_address)
+		
+		#create place to store services
+		self.advertised_services = []
+		print "Ready to accept registrations"
+		self.run()
+	def run(self):
+		while True:
+			registration = self.services_socket.recv()
+			
+			#total hack, turns out that there is like a empty frame sent 
+			#from the req on open, and it works when registrations length is greater than 5
+			if  len(registration) > 5:
+				print "Received request for " + registration + " to be registered."
+				
+				print "Registering..."
+				
+				#TODO: need to randomly generate ports
+				port = "5577"
+				
+				#decode the json
+				decoded_services = json.loads(registration)
+				self.advertised_services.append({"port":port, "services":decoded_services})
+				
+				print "Registered on port " + port
+				print "All provided services \n" + json.dumps(self.advertised_services)
+				 
+				self.services_socket.send(port)
 
-#This is the socket we connect a sample client too, that will send some request over.
-socket_for_client = context.socket(zmq.REP)
-socket_for_client.bind("tcp://*:5555")
-
-#register the sockets for what the server should poll
-poller = zmq.Poller()
-poller.register(socket_for_client, zmq.POLLIN)
-
-while True:
-	socks = dict(poller.poll())
-
-	if socket_for_client in socks and socks[socket_for_client] == zmq.POLLIN:
-		message = socket_for_client.recv()
-		response = message;
-		#json_message = json.loads(message)
-		#response = "Registered ", json_message[0]['methodname']
-     	time.sleep (1)
-     	socket_for_client.send(response)
+#start the server
+server = Server("tcp://*:5555")
