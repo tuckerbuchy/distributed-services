@@ -7,10 +7,10 @@ import zmq
 import time
 import json
 
-class Server:
+class RegistryServer:
 	def __init__(self, server_address):
 		self.context = zmq.Context()
-		
+		self.server_address = server_address
 		#bind to a socket.
 		print "Binding to " + server_address + "..."
 		self.services_socket = self.context.socket(zmq.ROUTER)
@@ -22,26 +22,26 @@ class Server:
 		self.run()
 	def run(self):
 		while True:
+			req_id = self.services_socket.recv()
+			empty = self.services_socket.recv()
 			registration = self.services_socket.recv()
-			
-			#total hack, turns out that there is like a empty frame sent 
-			#from the req on open, and it works when registrations length is greater than 5
-			if  len(registration) > 5:
-				print "Received request for " + registration + " to be registered."
-				
-				print "Registering..."
-				
-				#TODO: need to randomly generate ports
-				port = "5577"
-				
-				#decode the json
-				decoded_services = json.loads(registration)
-				self.advertised_services.append({"port":port, "services":decoded_services})
-				
-				print "Registered on port " + port
-				print "All provided services \n" + json.dumps(self.advertised_services)
-				 
-				self.services_socket.send(port)
 
+			print "REQ_ID : " + str(req_id)
+			print "REGISTRATION : " + registration
+			port = 5577
+			address = "tcp://*:" + str(port)
+
+			self.services_socket.send(req_id, zmq.SNDMORE)
+			self.services_socket.send(empty, zmq.SNDMORE)
+			self.services_socket.send(address)
+
+			print "Recieved services : " + registration
+			print "Registering..."
+				
+			# decode the json
+			decoded_services = json.loads(registration)
+			self.advertised_services.append({"address":address, "services":decoded_services})
+			print "Registered.\n"
+			print "Current available services: \n\t\t" + json.dumps(self.advertised_services)
 #start the server
-server = Server("tcp://*:5555")
+server = RegistryServer("tcp://*:5555")
