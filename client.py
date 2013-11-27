@@ -6,38 +6,28 @@
 import zmq
 import json
 
-#class to format messages to json over the wire.
-class MessageFormatter:
-	def getRegisterMessage(self, method_name, num_args):
-		#build the message
-		register_message = [{'methodname':method_name, 'numargs':num_args}]
-		#convert to string
-		register_message_str = json.dumps(register_message)
-		return register_message_str
+SERVER_ADDRESS = "tcp://localhost:5955"
 
-server_address = "tcp://localhost:5555"
+class Client:
+	def __init__(self):
+		self.context = zmq.Context()
+	def getServices(self):
+		# Socket to talk to server
+		print "Connecting to server at " + SERVER_ADDRESS
+		socket = self.connectToServer();
+		print "Connected."
+		print "Querying available services...."
+		service_request_json = {"services_request":"true"}
+		service_request = json.dumps(service_request_json)
+		socket.send(service_request)
+		services = socket.recv()
+		print "Recieved these services:"
+		print services
+	
+	def connectToServer(self):
+		socket = self.context.socket(zmq.REQ)
+		socket.connect (SERVER_ADDRESS)
+		return socket
 
-context = zmq.Context()
-
-# Socket to talk to server
-print "Connecting to server at ", server_address
-socket = context.socket(zmq.REQ)
-socket.connect (server_address)
-print "Connected."
-
-print "Registering service..."
-formatter = MessageFormatter()
-reg_message = formatter.getRegisterMessage("add", 2)
-socket.send(reg_message)
-response = socket.recv()
-#wait for response
-print response
-
-# # Do 10 requests, waiting each time for a response
-# while True:
-# 	print "Sending request "
-# 	socket.send ("Registering service: Add1")
-# 
-# 	# Get the reply.
-# 	message = socket.recv()
-# 	print "Received reply ", "[", message, "]"
+client = Client()
+client.getServices()

@@ -5,7 +5,8 @@
 #
 import zmq
 import time
-import json
+import json        
+import socket
 
 class RegistryServer:
 	def __init__(self, server_address):
@@ -20,28 +21,32 @@ class RegistryServer:
 		self.advertised_services = []
 		print "Ready to accept registrations"
 		self.run()
+
 	def run(self):
 		while True:
 			req_id = self.services_socket.recv()
 			empty = self.services_socket.recv()
-			registration = self.services_socket.recv()
+			server_query = self.services_socket.recv()
 
-			print "REQ_ID : " + str(req_id)
-			print "REGISTRATION : " + registration
-			port = 5577
-			address = "tcp://*:" + str(port)
-
-			self.services_socket.send(req_id, zmq.SNDMORE)
-			self.services_socket.send(empty, zmq.SNDMORE)
-			self.services_socket.send(address)
-
-			print "Recieved services : " + registration
-			print "Registering..."
-				
 			# decode the json
-			decoded_services = json.loads(registration)
-			self.advertised_services.append({"address":address, "services":decoded_services})
-			print "Registered.\n"
-			print "Current available services: \n\t\t" + json.dumps(self.advertised_services)
+			decoded_server_query = json.loads(server_query)
+
+			if "services_request" in decoded_server_query:
+				#send the services, this is a serviceconsumer
+				self.services_socket.send(req_id, zmq.SNDMORE)
+				self.services_socket.send(empty, zmq.SNDMORE)
+				self.services_socket.send(json.dumps(self.advertised_services))
+			elif "address" in decoded_server_query:
+				#this means that we are dealing with a provider
+				self.services_socket.send(req_id, zmq.SNDMORE)
+				self.services_socket.send(empty, zmq.SNDMORE)
+				self.services_socket.send_string("Registered you @ " + decoded_server_query["address"])
+
+				print "Recieved services : " + server_query
+				print "Registering..."
+					
+				self.advertised_services.append({"service_provider":decoded_server_query})
+				print "Registered.\n"
+
 #start the server
-server = RegistryServer("tcp://*:5555")
+server = RegistryServer("tcp://*:5955")

@@ -5,8 +5,10 @@
 #
 import zmq
 import json
+import uuid
+import socket
 
-SERVER_ADDRESS = "tcp://localhost:5555"
+SERVER_ADDRESS = "tcp://localhost:5955"
 
 class Service:
     def __init__(self, service_id, function):
@@ -15,55 +17,72 @@ class Service:
         #this is a functor
         self.function = function
 
+def getOpenPort():
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.bind(("",0))
+	s.listen(1)
+	port = s.getsockname()[1]
+	s.close()
+	return port
+
 class ServiceProvidingNode:
     
     def __init__(self):
         self.context = zmq.Context()
         self.services = []
+        
+        #we identify ourselves with a uuid.
+        self.id = uuid.uuid1()
     
     def addService(self, service):
         self.services.append(service)
     
-    def connectToServer(self, server_address):
+    def connectToRegistryServer(self, server_address):
         # Socket to talk to server
         print "Registering to server at ", server_address
         self.server_socket = self.context.socket(zmq.REQ)
         self.server_socket.connect (server_address)
         print "Connected."
-    
+
     def formatRegisterRequest(self):
         registered_services = []
         for service in self.services:
-            registered_services.append({"service_id":service.service_id})
-        registered_str = json.dumps(registered_services)
-        return registered_str
-    
+            registered_services.append(service.service_id)
+        registration_json = {}
+
+        port = getOpenPort()
+
+        address = "tcp://*:%d" %(port)
+        registration_json["address"] = address
+        registration_json["services"] = registered_services
+        return registration_json
+	
     #registers the services by sending a request over the wire, letting the server know it exists.
     def registerServices(self):
-        reg_message = self.formatRegisterRequest()
-        self.server_socket.send(reg_message)
-        port = self.server_socket.recv()
-        print "Registered."
-        self.openServiceSocket(port)
+        registration_json = self.formatRegisterRequest()
+        registered_str = json.dumps(registration_json)
+        #we need to send: 
+        #   [id, empty frame, message] 
+        #   by specifications of how the router socket works.
+        #self.sever_socket.send(str(self.id))
+        #self.server_socket.send("")
+        self.server_socket.send(registered_str)
+        registration_confirmation = self.server_socket.recv()
+        print registration_confirmation
+
+        net_address = registration_json["address"]
+        self.openServiceSocket(net_address)
         
-    def openServiceSocket(self, port):
-        print "Opening on port " + port + " for any incoming requests..."
-        self.services_socket = self.context.socket(zmq.REP)
+    def openServiceSocket(self, net_address):
+        print "Opening on  " + net_address + " for any incoming requests..."
+        self.services_socket = self.context.socket(zmq.ROUTER)
+        self.services_socket.bind(net_address)
         #wait on this socket now..
-        print "Listening on services socket..."
+        print "Listening on services socket @ %s" %(net_address)
         while True:
-            request = self.services_socket.recv()
-            print request
+            req_id = self.services_socket.recv()
+            empty = self.services_socket.recv()
+            #this is the actual service request object.
+            message = self.services_socket.recv()
+            print message
 
-def add(x,y):
-    return x + y
-
-
-def subtract(x,y):
-    return x - y
-
-service = ServiceProvidingNode()
-service.addService(Service("add", add))
-service.addService(Service("subtract", subtract))
-service.connectToServer(SERVER_ADDRESS)
-service.registerServices()
