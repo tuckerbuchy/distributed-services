@@ -45,8 +45,8 @@ class RegistryServer:
 				print "Recieved services : " + server_query
 				print "Registering..."
 					
-				self.advertised_services.append({"service_provider":decoded_server_query})
+				self.advertised_services.append(decoded_server_query)
 				print "Registered.\n"
 
 #start the server
-server = RegistryServer("tcp://*:5955")
+server = RegistryServer("tcp://*:5995")

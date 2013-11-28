@@ -1,9 +1,8 @@
 from service import *
 
-def subtract(x,y):
-    return x - y
+printString = lambda x: x
 
 service = ServiceProvidingNode()
-service.addService(Service("subtract", subtract))
+service.addService(Service("printString", printString))
 service.connectToRegistryServer(SERVER_ADDRESS)
 service.registerServices()

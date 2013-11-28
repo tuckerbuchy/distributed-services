@@ -8,12 +8,12 @@ import json
 import uuid
 import socket
 
-SERVER_ADDRESS = "tcp://localhost:5955"
+SERVER_ADDRESS = "tcp://localhost:5995"
 
 class Service:
     def __init__(self, service_id, function):
         #this is the service id
-        self.service_id = service_id  
+        self.service_id = service_id
         #this is a functor
         self.function = function
 
@@ -52,7 +52,7 @@ class ServiceProvidingNode:
 
         port = getOpenPort()
 
-        address = "tcp://*:%d" %(port)
+        address = "tcp://127.0.1.1:%d" %(port)
         registration_json["address"] = address
         registration_json["services"] = registered_services
         return registration_json
@@ -61,11 +61,6 @@ class ServiceProvidingNode:
     def registerServices(self):
         registration_json = self.formatRegisterRequest()
         registered_str = json.dumps(registration_json)
-        #we need to send: 
-        #   [id, empty frame, message] 
-        #   by specifications of how the router socket works.
-        #self.sever_socket.send(str(self.id))
-        #self.server_socket.send("")
         self.server_socket.send(registered_str)
         registration_confirmation = self.server_socket.recv()
         print registration_confirmation
@@ -84,5 +79,22 @@ class ServiceProvidingNode:
             empty = self.services_socket.recv()
             #this is the actual service request object.
             message = self.services_socket.recv()
-            print message
+            service_request = json.loads(message)
+            result = self.processRequest(service_request)
+            result = {}
+            result["result"] = result
+            result_str = json.dumps(result)
+            self.services_socket.send(req_id, zmq.SNDMORE)
+            self.services_socket.send("", zmq.SNDMORE)
+            self.services_socket.send(result_str)
+
+    def processRequest(self, service_request):
+    	service_id = service_request["service_id"]
+    	for service in self.services:
+    		if service.service_id == service_id:
+    			fun = service.function
+    			args = service_request["args"]
+    			#this calls the function with the array parameters
+    			return fun(*args)
+    	return "No service exists!"
 
