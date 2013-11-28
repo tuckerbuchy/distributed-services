@@ -1,9 +1,8 @@
 from service import *
 
-def add(x,y):
-    return int(x) + int(y)
+printString = lambda x: x
 
 service = ServiceProvidingNode()
-service.addService(Service("add", add))
+service.addService(Service("printString", printString))
 service.connectToRegistryServer(SERVER_ADDRESS)
 service.registerServices()

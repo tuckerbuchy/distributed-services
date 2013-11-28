@@ -34,7 +34,11 @@ class Client:
 		socket.send(service_request)
 		services = socket.recv()
 		self.services_available = json.loads(services)
-		print "Recieved these services: \n\t\t%s" %(services)
+		print "Recieved these services:"
+		for service_prov in self.services_available:
+			services = service_prov["services"]
+			for service in services:
+				print "\t\t" + service
 	
 	def connectToServer(self):
 		socket = self.context.socket(zmq.REQ)
@@ -62,6 +66,7 @@ class Client:
 		service_call_message = json.dumps(service_call)
 		socket.send(service_call_message)
 		result = socket.recv()
-		print result
+		result_json = json.loads(result)
+		print "##########################\nRecieved the result: " + result_json["result"] + "\n##########################"
 
 client = Client()

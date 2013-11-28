@@ -81,9 +81,9 @@ class ServiceProvidingNode:
             message = self.services_socket.recv()
             service_request = json.loads(message)
             result = self.processRequest(service_request)
-            result = {}
-            result["result"] = result
-            result_str = json.dumps(result)
+            result_json = {}
+            result_json["result"] = str(result)
+            result_str = json.dumps(result_json)
             self.services_socket.send(req_id, zmq.SNDMORE)
             self.services_socket.send("", zmq.SNDMORE)
             self.services_socket.send(result_str)
