@@ -1,8 +1,3 @@
-#
-# Hello World client in Python
-# Connects REQ socket to tcp://localhost:5955
-# Sends "Hello" to server, expects "World" back
-#
 import zmq
 import json
 

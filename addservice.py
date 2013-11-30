@@ -1,5 +1,7 @@
 from service import *
 
+#this is a simple add service. This will returned the added result of two integers.
+
 def add(x,y):
     return int(x) + int(y)
 

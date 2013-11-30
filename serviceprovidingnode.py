@@ -75,7 +75,7 @@ class ServiceProvidingNode:
         print "Opening on  " + net_address + " for any incoming requests..."
         self.services_socket = self.context.socket(zmq.ROUTER)
         self.services_socket.bind(net_address)
-        #wait on this socket now..
+        #wait on this socket now for service requests..
         print "Listening on services socket @ %s" %(net_address)
         while True:
             req_id = self.services_socket.recv()
@@ -93,6 +93,7 @@ class ServiceProvidingNode:
 
     def processRequest(self, service_request):
     	service_id = service_request["service_id"]
+        print "Received request : " + service_id
     	for service in self.services:
     		if service.service_id == service_id:
     			fun = service.function
