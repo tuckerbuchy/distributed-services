@@ -9,5 +9,20 @@ This is supposed to demonstrate that certain languages are more suited for certa
 
 
 **Dependencies**
+
 zeromq - python bindings @  http://zeromq.org/bindings:python
+
 Python 2.7 (this is the version it has been tested on)
+
+**Running**
+
+run the server with python registryserver.py
+
+open a new terminal
+
+register one of the services (ex. python addservice.py)
+
+open a new terminal
+
+run the client : python serviceconsumingnode.py
+
